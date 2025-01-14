@@ -8,50 +8,13 @@ import numpy as np
 from torchvision import transforms
 import os
 import requests
-from io import BytesIO
+import shutil
 
 # ##############
-# تهيئة النموذج وتحميله من الرابط
+# تهيئة التطبيق
 # ##############
-@st.cache_resource
-def download_model(url, model_path):
-    """
-    تحميل النموذج من رابط GitHub وحفظه محليًا.
-    
-    Parameters:
-        url (str): رابط النموذج على GitHub
-        model_path (str): المسار المحلي لحفظ النموذج
-    
-    Returns:
-        None
-    """
-    if not os.path.exists(model_path):
-        st.info("جارٍ تحميل النموذج، يرجى الانتظار...")
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(model_path, 'wb') as f:
-                f.write(response.content)
-            st.success("تم تحميل النموذج بنجاح!")
-        else:
-            st.error("فشل في تحميل النموذج. يرجى التحقق من الرابط والمحاولة مرة أخرى.")
-            st.stop()
-
-@st.cache_resource
-def load_model(model_path, num_labels):
-    """
-    تحميل نموذج MobileViT المدرب مسبقًا.
-    
-    Parameters:
-        model_path (str): مسار ملف النموذج .pth
-        num_labels (int): عدد الفئات
-
-    Returns:
-        model: نموذج MobileViT مُحمّل
-    """
-    model = timm.create_model('mobilevit_xxs', pretrained=False, num_classes=num_labels)
-    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-    model.eval()
-    return model
+# يجب أن يكون st.set_page_config أول أمر Streamlit في السكريبت
+st.set_page_config(page_title="📷 تشخيص أمراض أشجار النخيل", layout="centered")
 
 # تعريف أسماء الفئات وخطط العلاج
 CLASS_NAMES = [
@@ -78,21 +41,52 @@ ADVICE_DICT = {
     'عينة سليمة': 'الحفاظ على ممارسات زراعية جيدة تشمل الري والتسميد المنتظمين، والتأكد من التصريف الجيد، ومراقبة ظهور أي أعراض على الأشجار بانتظام.'
 }
 
-# مسار النموذج المحلي
+# رابط النموذج ومساره المحلي
 MODEL_URL = "https://github.com/atwahsz/palm_tree_app/raw/refs/heads/main/best_mobilevit_palm_disease.pth"
-MODEL_DIR = "model_outputs"
-MODEL_NAME = "best_mobilevit_palm_disease.pth"
-MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
+MODEL_PATH = "model_outputs/best_mobilevit_palm_disease.pth"
 
-# التأكد من وجود المجلد
-os.makedirs(MODEL_DIR, exist_ok=True)
-
-# تحميل النموذج من الرابط إذا لم يكن موجودًا
-download_model(MODEL_URL, MODEL_PATH)
-
+# ##############
 # تحميل النموذج
-NUM_LABELS = len(CLASS_NAMES)
-model = load_model(MODEL_PATH, NUM_LABELS)
+# ##############
+def download_model(model_url, model_path):
+    """
+    تحميل النموذج من URL وحفظه محليًا.
+    
+    Parameters:
+        model_url (str): رابط تحميل النموذج
+        model_path (str): مسار حفظ النموذج محليًا
+    
+    Returns:
+        None
+    """
+    if not os.path.exists(model_path):
+        st.info("جارٍ تحميل النموذج، يرجى الانتظار...")
+        response = requests.get(model_url, stream=True)
+        with open(model_path, 'wb') as f:
+            shutil.copyfileobj(response.raw, f)
+        st.success("تم تحميل النموذج بنجاح!")
+    else:
+        st.info("النموذج موجود بالفعل.")
+
+def load_model_func(model_path, num_labels):
+    """
+    تحميل نموذج MobileViT المدرب مسبقًا.
+    
+    Parameters:
+        model_path (str): مسار ملف النموذج .pth
+        num_labels (int): عدد الفئات
+
+    Returns:
+        model: نموذج MobileViT مُحمّل
+    """
+    model = timm.create_model('mobilevit_xxs', pretrained=False, num_classes=num_labels)
+    model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+    model.eval()
+    return model
+
+# تحميل النموذج إذا لم يكن موجودًا
+download_model(MODEL_URL, MODEL_PATH)
+model = load_model_func(MODEL_PATH, len(CLASS_NAMES))
 
 # ##############
 # تعريف الدوال
@@ -150,8 +144,6 @@ def get_advice(class_name):
 # ##############
 # واجهة التطبيق
 # ##############
-st.set_page_config(page_title="📷 تشخيص أمراض أشجار النخيل", layout="centered")
-
 st.title("📷 تطبيق تشخيص أمراض أشجار النخيل")
 
 st.write("""
@@ -183,5 +175,5 @@ else:
 # ##############
 st.markdown("""
 ---
-**ملاحظة:** تم تحميل النموذج `best_mobilevit_palm_disease.pth` من GitHub وحفظه في المجلد `model_outputs/`. إذا كنت ترغب في تحديث النموذج، يمكنك استبدال الملف المحفوظ بآخر جديد.
+**ملاحظة:** النموذج `best_mobilevit_palm_disease.pth` سيتم تحميله تلقائيًا من الرابط المحدد إذا لم يكن موجودًا محليًا.
 """)
