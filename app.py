@@ -7,10 +7,35 @@ import timm
 import numpy as np
 from torchvision import transforms
 import os
+import requests
+from io import BytesIO
 
 # ##############
-# تهيئة النموذج
+# تهيئة النموذج وتحميله من الرابط
 # ##############
+@st.cache_resource
+def download_model(url, model_path):
+    """
+    تحميل النموذج من رابط GitHub وحفظه محليًا.
+    
+    Parameters:
+        url (str): رابط النموذج على GitHub
+        model_path (str): المسار المحلي لحفظ النموذج
+    
+    Returns:
+        None
+    """
+    if not os.path.exists(model_path):
+        st.info("جارٍ تحميل النموذج، يرجى الانتظار...")
+        response = requests.get(url)
+        if response.status_code == 200:
+            with open(model_path, 'wb') as f:
+                f.write(response.content)
+            st.success("تم تحميل النموذج بنجاح!")
+        else:
+            st.error("فشل في تحميل النموذج. يرجى التحقق من الرابط والمحاولة مرة أخرى.")
+            st.stop()
+
 @st.cache_resource
 def load_model(model_path, num_labels):
     """
@@ -53,15 +78,20 @@ ADVICE_DICT = {
     'عينة سليمة': 'الحفاظ على ممارسات زراعية جيدة تشمل الري والتسميد المنتظمين، والتأكد من التصريف الجيد، ومراقبة ظهور أي أعراض على الأشجار بانتظام.'
 }
 
+# مسار النموذج المحلي
+MODEL_URL = "https://github.com/atwahsz/palm_tree_app/raw/refs/heads/main/best_mobilevit_palm_disease.pth"
+MODEL_DIR = "model_outputs"
+MODEL_NAME = "best_mobilevit_palm_disease.pth"
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
+
+# التأكد من وجود المجلد
+os.makedirs(MODEL_DIR, exist_ok=True)
+
+# تحميل النموذج من الرابط إذا لم يكن موجودًا
+download_model(MODEL_URL, MODEL_PATH)
+
 # تحميل النموذج
-MODEL_PATH = 'https://github.com/atwahsz/palm_tree_app/raw/refs/heads/main/best_mobilevit_palm_disease.pth'  # تأكد من مسار النموذج الصحيح
 NUM_LABELS = len(CLASS_NAMES)
-
-# تحقق من وجود النموذج
-if not os.path.exists(MODEL_PATH):
-    st.error(f"لم يتم العثور على النموذج في المسار التالي: {MODEL_PATH}. يرجى التأكد من وجود ملف النموذج.")
-    st.stop()
-
 model = load_model(MODEL_PATH, NUM_LABELS)
 
 # ##############
@@ -153,5 +183,5 @@ else:
 # ##############
 st.markdown("""
 ---
-**ملاحظة:** تأكد من أن النموذج `mobilevit_palm_disease_final.pth` موجود في المجلد المحدد (`model_outputs/`) أو قم بتعديل المسار في المتغير `MODEL_PATH` وفقًا لذلك.
+**ملاحظة:** تم تحميل النموذج `best_mobilevit_palm_disease.pth` من GitHub وحفظه في المجلد `model_outputs/`. إذا كنت ترغب في تحديث النموذج، يمكنك استبدال الملف المحفوظ بآخر جديد.
 """)
