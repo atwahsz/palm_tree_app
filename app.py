@@ -15,6 +15,12 @@ import shutil
 # ##############
 # يجب أن يكون st.set_page_config أول أمر Streamlit في السكريبت
 st.set_page_config(page_title="📷 تشخيص أمراض أشجار النخيل", layout="centered")
+# Add Built by Saleh Atwah and LinkedIn logo
+st.markdown("""
+<h3 style='text-align: center;'>Built by Saleh Atwah</h3>
+<p style='text-align: center;'><a href='https://www.linkedin.com/in/saleh-al-atwah/' target='_blank'>
+<img src='https://i.pinimg.com/originals/b2/f8/28/b2f828513f21444829a619ce563d4d4e.png' style='width: 50px; height: 50px;'></a></p>
+""", unsafe_allow_html=True)
 
 # تعريف أسماء الفئات وخطط العلاج
 CLASS_NAMES = [
