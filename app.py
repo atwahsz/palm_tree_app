@@ -147,6 +147,30 @@ def get_advice(class_name):
     """
     return ADVICE_DICT.get(class_name, 'لا توجد نصيحة متاحة لهذه الفئة.')
 
+def download_model(model_url, model_path):
+    """
+    تحميل النموذج من URL وحفظه محليًا.
+    
+    Parameters:
+        model_url (str): رابط تحميل النموذج
+        model_path (str): مسار حفظ النموذج محليًا
+    
+    Returns:
+        None
+    """
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    
+    if not os.path.exists(model_path):
+        st.info("جارٍ تحميل النموذج، يرجى الانتظار...")
+        response = requests.get(model_url, stream=True)
+        with open(model_path, 'wb') as f:
+            shutil.copyfileobj(response.raw, f)
+        st.success("تم تحميل النموذج بنجاح!")
+    else:
+        st.info("النموذج موجود بالفعل.")
+
+
 # ##############
 # واجهة التطبيق
 # ##############
