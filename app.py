@@ -1,5 +1,3 @@
-# palm_disease_app_mobilevit.py
-
 import streamlit as st
 from PIL import Image
 import torch
@@ -13,13 +11,14 @@ import shutil
 # ##############
 # تهيئة التطبيق
 # ##############
-# يجب أن يكون st.set_page_config أول أمر Streamlit في السكريبت
 st.set_page_config(page_title="📷 تشخيص أمراض أشجار النخيل", layout="centered")
-# Add Built by Saleh Atwah and LinkedIn logo
 st.markdown("""
 <h3 style='text-align: center;'>Built by Saleh Atwah</h3>
-<p style='text-align: center;'><a href='https://www.linkedin.com/in/saleh-al-atwah/' target='_blank'>
-<img src='https://i.pinimg.com/originals/b2/f8/28/b2f828513f21444829a619ce563d4d4e.png' style='width: 50px; height: 50px;'></a></p>
+<p style='text-align: center;'>
+  <a href='https://www.linkedin.com/in/saleh-al-atwah/' target='_blank'>
+    <img src='https://i.pinimg.com/originals/b2/f8/28/b2f828513f21444829a619ce563d4d4e.png' style='width: 50px; height: 50px;'>
+  </a>
+</p>
 """, unsafe_allow_html=True)
 
 # تعريف أسماء الفئات وخطط العلاج
@@ -65,6 +64,9 @@ def download_model(model_url, model_path):
     Returns:
         None
     """
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(model_path), exist_ok=True)
+    
     if not os.path.exists(model_path):
         st.info("جارٍ تحميل النموذج، يرجى الانتظار...")
         response = requests.get(model_url, stream=True)
@@ -113,7 +115,7 @@ def preprocess_image(image):
         transforms.Normalize(mean=[0.485, 0.456, 0.406],  # متوسط ImageNet
                              std=[0.229, 0.224, 0.225])   # انحراف ImageNet
     ])
-    return preprocess(image).unsqueeze(0)  # إضافة بعد الدفعة
+    return preprocess(image).unsqueeze(0)
 
 def predict(image, model, class_names):
     """
@@ -146,30 +148,6 @@ def get_advice(class_name):
         str: خطة العلاج
     """
     return ADVICE_DICT.get(class_name, 'لا توجد نصيحة متاحة لهذه الفئة.')
-
-def download_model(model_url, model_path):
-    """
-    تحميل النموذج من URL وحفظه محليًا.
-    
-    Parameters:
-        model_url (str): رابط تحميل النموذج
-        model_path (str): مسار حفظ النموذج محليًا
-    
-    Returns:
-        None
-    """
-    # Ensure the directory exists
-    os.makedirs(os.path.dirname(model_path), exist_ok=True)
-    
-    if not os.path.exists(model_path):
-        st.info("جارٍ تحميل النموذج، يرجى الانتظار...")
-        response = requests.get(model_url, stream=True)
-        with open(model_path, 'wb') as f:
-            shutil.copyfileobj(response.raw, f)
-        st.success("تم تحميل النموذج بنجاح!")
-    else:
-        st.info("النموذج موجود بالفعل.")
-
 
 # ##############
 # واجهة التطبيق
